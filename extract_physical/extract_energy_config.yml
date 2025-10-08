@@ -1,0 +1,14 @@
+# Calculate values over the Monte Carlo results? Note that energy does not do monte carlo simulation
+do-montecarlo: no
+
+#For which unique variables should distinct files be made
+file-organize: [rcp, ssp]
+
+
+# default is yes which is a weighted aggregation based on expected distribution of temperatures
+# Since inequality looks at the data by global warming level and therefore the models were chosen by temperature we did not want to weight the aggregates
+do-gcmweights: no
+
+# Quantiles
+# Set to match the likelhood ranges from IPCC
+evalqvals: ['mean', .95, .90, .75, .66, .50, .33, .25, .1, .05]
