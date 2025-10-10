@@ -19,7 +19,7 @@
 #=================================================================================#
 # packages and paths ----
 
-packages = c("glue", "tidyverse", "readr")
+packages = c("glue", "dplyr", "readr")
 
 invisible(lapply(packages, function(pkg) {
   suppressPackageStartupMessages(library(pkg, character.only = TRUE))
@@ -28,8 +28,8 @@ invisible(lapply(packages, function(pkg) {
 # projection system allcalcs file parent directories
 root = "/project/cil/gcp/outputs/mortality/impacts-darwin/single/single-aug2025"
 out_dir = "/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/covars"
-allcalcs = "tests.configs.mortality.allmodels-allcalcs-Agespec_interaction_response-oldest.csv" # all allcalcs files are the same
-adjust = T
+allcalcs = "tests.configs.mortality.allmodels-allcalcs-Agespec_interaction_response-oldest.csv" # all age group allcalcs files are the same
+adjust = F
 
 # specifications we need covariates for
 specs = list(
@@ -42,7 +42,7 @@ specs = list(
   list(rcp = "rcp45", gcm = "MIROC-ESM", iam="low", ssp="SSP2"),
   list(rcp = "rcp45", gcm = "MIROC-ESM-CHEM", iam="low", ssp="SSP2"),
   list(rcp = "rcp85", gcm = "GFDL-ESM2M", iam="low", ssp="SSP2"),
-  list( , gcm = "inmcm4", iam="low", ssp="SSP2")
+  list(rcp = "rcp85", gcm = "inmcm4", iam="low", ssp="SSP2")
 )
 
 #=================================================================================#
@@ -57,7 +57,7 @@ for (spec in specs){
   
   message("[Running: ] ", ssp, ", ", iam, ", ", rcp, ", ", gcm)
 
-  # get loggdppc and climtas from labor 
+  # get loggdppc and climtas from mortality
   clim_inc = suppressMessages(read_csv(glue("{root}/{rcp}/{gcm}/{iam}/{ssp}/{allcalcs}"), skip = 21, show_col_types = FALSE))
   clim_inc = clim_inc %>% select(region, 2, loggdppc, climtas) %>% rename(year = `year...2`)
 
@@ -66,6 +66,7 @@ for (spec in specs){
   out = glue("{out_dir}/{rcp}/{gcm}/{iam}/{ssp}")
   dir.create(out, recursive=T, showWarnings = F)
   
+  # This is if we want to test adjusting long run covariates affects mortality estimates
   # Load in age group population to get population weighted loggdppc average
   if (adjust){
     pop = read_csv('/project/cil/home_dirs/egrenier/cil-comms/memo_fact_check/data/misc/pop-SSP2-low.csv') %>% select(region, year, pop)
@@ -84,8 +85,8 @@ for (spec in specs){
   }
   
   
-  message(glue("[writing: ] {rcp}/{gcm}/{iam}/{ssp}/mortality-econ_clim-income_adjusted2.csv"))
-  #write.csv(clim_inc, glue("{out}/mortality-econ_clim-income_adjusted2.csv"), row.names = F)
+  message(glue("[writing: ] {rcp}/{gcm}/{iam}/{ssp}/mortality-econ_clim.csv"))
+  write.csv(clim_inc, glue("{out}/mortality-econ_clim.csv"), row.names = F)
   message("---- saved ----\n")
   
 }

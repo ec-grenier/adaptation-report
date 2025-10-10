@@ -33,7 +33,7 @@ year = as.numeric(args[3])
 
 # rcp = 'rcp45'
 # gcm = 'ACCESS1-0'
-# year=2050
+# year = 2050
 
 ssp = "SSP2" # Hard coded. for now not changing. easy to change by including in CLI args
 iam = "low"
@@ -48,7 +48,10 @@ region_list = list(unique((fread(cov_dir))$region))
 #region_list = list('BRA.22.4329.Raaa3e9be8ca4501a', 'AUS.6.761', 'OMN.4.25', 'BWA.7', 'MEX.23.1231') # <- REGIONS NEAR 0 IMPACTS
 #region_list = list('PAK.2.4.23')#, 'BFA.29', 'NER.1.3.4', 'DZA.1.16', 'SDN.6.15.72.223') # <- DELTABETA IMPACTS MUCH HIGHER
 #region_list = list('USA.26.1540', 'USA.14.649') # <- PROJ HAS NEGATIVE IMPACTS, SIGN FLIP IN DB
-#slug='top1'
+#region_list = list('CAN.8.117.2359')#, 'RUS.65.1741.1858', 'CAN.8.117.2350', 'RUS.5.108.108') # <- Cold deaths underestimated
+#region_list = list('PAK.2.4.23')
+
+slug=''
 
 #-----set args here-----
 args = list(years=year,
@@ -68,7 +71,7 @@ args = list(years=year,
             ncname="1.6",
             TT_upper_bound=62,
             TT_lower_bound=-62,
-            TT_step=0.1,
+            TT_step=1,
             do.clipping=T,
             goodmoney.clipping=T, 
             do.diffclip=T,
@@ -77,7 +80,7 @@ args = list(years=year,
             delta.beta=F, # TRUE IF YOU WANT PLOTS
             return.db=T,
             rel.20 = T,
-            save.plot=T
+            save.plot=F
             )
 
 #==============================================================================#
@@ -98,7 +101,7 @@ for (age in age_list){
   df = do.call(rbind, df) %>% as.data.frame() %>% select(region, bin, effect_fa)
   #df = df %>% filter(bin == "hot" | bin == "cold" | bin == "Total")
   
-  file_name = glue("mortality-delta_beta-fulladapt-{year}-{agegroup}-001_bins.csv")
+  file_name = glue("mortality-delta_beta-fulladapt-{year}-{agegroup}-old_db.csv")
   output = glue("{out}/{file_name}")
   
   message('\n[ saving ]\n')

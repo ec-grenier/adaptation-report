@@ -41,10 +41,11 @@ get.clipped.curve.mortality.mmt <- function(csvv, climtas, loggdppc, age, year, 
       }
     }
   }
-  yy0 <- get.curve.mortality(TT=TT, csvv=csvv, climtas=climtas[1], loggdppc=loggdppc[1], age=age) 
   
+  yy0 <- get.curve.mortality(TT=TT, csvv=csvv, climtas=climtas[1], loggdppc=loggdppc[1], age=age) 
   ii.min <- which.min(yy0[TT >= 10 & TT <= minpoly_constraint]) + which(TT == 10) - 1
   MMT = TT[ii.min]
+  
   message(paste0('Region: ',region,'; Age: ',age,'; MMT: ',TT[ii.min]))
   return(as.numeric(MMT))
 }
@@ -62,9 +63,9 @@ standard_delta_beta = function(region, curve_ds, binclim, year, base_year, rebas
   NA_effect_by = curve_ds[dims,paste0(base_year,'_NA'),region]*binclim[dims,paste(rebase_year),] #beta NA*clim 2005
   
   #rebase
-  FA_effect_y = FA_effect_y - FA_effect_clim
+  #FA_effect_y = FA_effect_y - FA_effect_clim
   IA_effect_by = IA_effect_by - IA_effect_clim
-  
+  FA_effect_y = FA_effect_y - IA_effect_clim
   # Alternative formula for diagnostic purposes
   # term_1 = curve_ds[dims,paste0(year),region]*(binclim[dims,paste(year),] - binclim[dims,paste(base_year),])
   # term_2 = (curve_ds[dims,paste0(year),region] - curve_ds[dims,paste0(year,'_IA'),region])*(binclim[dims,paste(base_year),] - binclim[dims,paste(rebase_year),])
@@ -82,7 +83,7 @@ standard_delta_beta = function(region, curve_ds, binclim, year, base_year, rebas
     beta_fa = curve_ds[dims,paste0(year),region],
     beta_ia = curve_ds[dims,paste0(year,'_IA'),region],
     beta_na = curve_ds[dims,paste0(base_year,'_NA'),region],
-    effect_fa = FA_effect_y - IA_effect_by,
+    effect_fa = FA_effect_y,# - IA_effect_by,
     effect_ia = IA_effect_y - IA_effect_by,
     effect_na = NA_effect_y - NA_effect_by
     #effect_fa_alt = term_1 + term_2 # Use for diagnostics, should be exactly the same result as effect_fa
