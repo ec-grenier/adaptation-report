@@ -56,7 +56,7 @@ combine_impacts = function(pop, spec, year){
     cols = c("region", paste0(age, "_pop"), paste0(age, "_share"))
     pop_subset = pop[ , ..cols]
     
-    deaths = fread(glue('{input}/deltabeta/{rcp}/{gcm}/low/SSP2/mortality-delta_beta-fulladapt-{year}-{age}.csv')) %>%
+    deaths = fread(glue('{input}/deltabeta/{rcp}/{gcm}/low/SSP2/mortality-delta_beta-fulladapt-{year}-{age}-001_bins.csv')) %>%
       mutate(bin = recode(bin,
                           "Total" = paste0("deaths","_",age),
                           "hot" = paste0("hot","_",age),
@@ -74,8 +74,8 @@ combine_impacts = function(pop, spec, year){
            cold = cold_young * young_share + cold_older * older_share + cold_oldest * oldest_share) %>%
     select(region, deaths, hot, cold) 
   
-  output = glue('{input}/deltabeta/{rcp}/{gcm}/low/SSP2/mortality-delta_beta-fulladapt-{year}-combined.csv')
-  print(output)
+  output = glue('{input}/deltabeta/{rcp}/{gcm}/low/SSP2/mortality-delta_beta-fulladapt-{year}-combined-001_bins.csv')
+  message(output)
   write.csv(impacts, output, row.names=F)
 }
 

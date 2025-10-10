@@ -129,7 +129,7 @@ standard_delta_beta = function(region, curve_ds, binclim, year, base_year, rebas
   return(db_table)
 }
 
-get_db_table = function(csvv, region, clim, covars, age, args) {
+get_db_table = function(csvv, region, clim, covars, age, args, ...) {
   
   for(i in 1:length(args)) {
     assign(x = names(args)[i], value = args[[i]])
@@ -151,7 +151,6 @@ get_db_table = function(csvv, region, clim, covars, age, args) {
   #message("Binning climate...")
   binclim = mapply_bin_clim(regions=region, years=all_years, clim=clim,
                             TT_lower_bound=TT_lower_bound, TT_upper_bound=TT_upper_bound, TT_step=TT_step)
-
   # Response functions
   #message('drawing response functions...')
   #message('---full adapt')
@@ -181,10 +180,35 @@ get_db_table = function(csvv, region, clim, covars, age, args) {
                                         curve_ds=curve_ds, do.clipping=do.clipping,
                                         goodmoney.clipping=goodmoney.clipping, do.diffclip=do.diffclip)
                      
-  
-  df = standard_delta_beta(region=region, curve_ds=curve_ds, year=years, binclim=binclim,  # comment out binclim if running global 
+  df = standard_delta_beta(region=region, curve_ds=curve_ds, year=years, binclim=binclim,
                            base_year=base_year, rebase_year=rebase_year, rnd.digits=5, het.list=het.list,
                            full_db=full_db, drop_zero_bins=F, rel.mmt=T, mmt=mmt, bin=NULL)
+  
+  if (delta.beta==T) {
+    message('delta-beta...')
+    years_sub = sort(c(years, base_year))
+    bounds = mapply_bound_to_hist(regions=region, years=years_sub, binclim=binclim)
+    yrs = names(bounds[[1]])
+    bound2 <- list()
+    bound2[[names(bounds)[1]]] <- list(
+      setNames(list(bounds[[1]][[1]]), paste0(yrs[1], "_NA")),
+      setNames(list(bounds[[1]][[2]]), yrs[2]),
+      setNames(list(bounds[[1]][[2]]), paste0(yrs[2], "_IA"))
+    )
+    bound2[[names(bounds)[1]]] <- unlist(bound2[[names(bounds)[1]]], recursive = FALSE)
+    
+    curve_plots = mapply_plot_curve(regions=region, curve_ds=curve_ds, bounds=bound2, years=years, base_year=base_year, ...)
+    hist_plots = mapply_plot_hist(regions=region, binclim=binclim, ...)
+    yp = mapply_yellow_purple(regions=region, curve_plots=curve_plots, hist_plots=hist_plots, ...)
+
+    if(save.plot){
+      yp = yp[[1]]
+      save_plot(plot = yp, 
+                filename = glue('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/output/yellow_purple/yp_{region}_{age}_{rcp}_{gcm}_{base_year}_{rebase_year}{slug}.jpg'),
+                base_height = 10,
+                base_width = 10)
+    }
+  }
   
   return(df)
 }
