@@ -19,7 +19,7 @@ source('/project/cil/home_dirs/egrenier/repos/inequality/4_figures_and_tables/he
 
 input ='/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/extracted'
 sector = 'mortality'
-scn = 'incadapt' # only fulladapt, noadapt or costs
+scn = 'incadapt' # fulladapt, noadapt, incadapt or costs
 category = 'combined'
 unit = 'rates'
 gwl_bin = '3_c'
