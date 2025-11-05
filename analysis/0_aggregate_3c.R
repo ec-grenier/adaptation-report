@@ -19,12 +19,12 @@ source('/project/cil/home_dirs/egrenier/repos/inequality/4_figures_and_tables/he
 
 input ='/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/extracted'
 sector = 'mortality'
-scn = 'fulladapt' # only fulladapt, noadapt or costs
-category = 'young'
+scn = 'incadapt' # only fulladapt, noadapt or costs
+category = 'combined'
 unit = 'rates'
 gwl_bin = '3_c'
 period = 'midc'
-spatial = 'aggregated' # 'ir_level' or 'aggregated'
+spatial = 'ir_level' # 'ir_level' or 'aggregated'
 allyears = '' # '-all_years' or '' 
 
 calc_quantiles = function(values_data){
@@ -36,6 +36,7 @@ calc_quantiles = function(values_data){
     group_by(region, year) %>% 
     partition(cluster) %>% 
     summarise(mean = mean(value, na.rm=T),
+              q99 = quantile(value, 0.99, na.rm=T),
               q95 = quantile(value, 0.95, na.rm=T),
               q90 = quantile(value, 0.90, na.rm=T),
               q75 = quantile(value, 0.75, na.rm=T),
@@ -44,7 +45,9 @@ calc_quantiles = function(values_data){
               q33 = quantile(value, 0.33, na.rm=T),
               q25 = quantile(value, 0.25, na.rm=T),
               q10 = quantile(value, 0.10, na.rm=T),
-              q5 = quantile(value, 0.05, na.rm=T)) %>% 
+              q5 = quantile(value, 0.05, na.rm=T),
+              q1 = quantile(value, 0.01, na.rm=T)
+              ) %>% 
     collect()
   
   return(edf_data)
@@ -69,9 +72,14 @@ if(sector == 'agriculture' & unit == 'delta_cals'){ raw_gwl_data = raw_gwl_data 
 raw_gwl_data = calc_quantiles(raw_gwl_data) %>% 
   pivot_longer(., mean:names(.)[ncol(.)], names_to = 'quantile', values_to = 'value') %>% 
   pivot_wider(names_from = quantile, values_from = value) %>% 
-  select(region, year, mean, q5, q10, q25, q33, q50, q66, q75, q90, q95)
+  select(region, year, mean, q1, q5, q10, q25, q33, q50, q66, q75, q90, q95, q99)
 
+if (spatial == "aggregated"){
+  raw_gwl_data = raw_gwl_data %>% filter(nchar(region) <= 3)
+}
+
+print(glue('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2-low{allyears}.csv'))
 # write out
 write.csv(raw_gwl_data, 
-          glue('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2{allyears}.csv'), 
+          glue('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2-low{allyears}.csv'), 
           row.names=F)

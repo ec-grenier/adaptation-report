@@ -28,29 +28,29 @@ output = "/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/output/map
 # set parameters
 
 sector = 'mortality'
-scn = 'fulladapt'
-category = 'young'
-unit = 'levels'
+scn = 'noadapt'
+category = 'combined'
+unit = 'rates'
 gwl_bin = '3_c'
 period = 'midc'
 spatial = 'ir_level' # 'aggregated' or 'ir_level'
 top = NULL # accepts values in (0,1) or NULL -- ONLY RUN THIS WITH IR_LEVEL
 cont = F # T or F
-db="-cold"
-db_slug=" -- Cold days"
-lb = -500
+db=""
+db_slug=""
+lb = -150
 ub = -lb
-
+slug=''
 title = glue("Mid century {sector} {category} age group impacts (3C warming{db_slug})")
 colorbar_title = ifelse(unit == "rates", "Deaths/100,000", "Deaths")
 
-slug = ifelse(!is.null(top), glue('-top_{top}'),'')
+#slug = ifelse(!is.null(top), glue('-top_{top}'),'')
 
 #==============================================================================#
 # load data
 
 map.df = st_read('/project/cil/sacagawea_shares/gcp/regions/world_combo_201710_mockup/agglomerated-world-new-simp100.shp')
-print(glue("Reading: {input}/{sector}-{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2-low{db}.csv"))
+print(glue("Reading: {input}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2-low{db}.csv"))
 
 if (spatial == 'aggregated' & unit == 'levels'){
   impacts = read.csv(glue("{input}/{sector}/{category}-{scn}-ir_level-{unit}-{gwl_bin}-{period}-SSP2-low{db}.csv")) %>%

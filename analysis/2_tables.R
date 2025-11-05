@@ -9,7 +9,7 @@
 #==============================================================================#
 # load packages and paths ----
 
-packages <- c("glue", "tidyverse", "multidplyr", "data.table", "reticulate")
+packages = c("glue", "tidyverse", "multidplyr", "data.table", "reticulate")
 
 invisible(lapply(packages, function(pkg) {
   suppressPackageStartupMessages(library(pkg, character.only = TRUE))
@@ -25,28 +25,28 @@ output = '/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/output/dat
 #==============================================================================#
 # set parameters ----
 
-run_table = function(sector, category, scn, unit, gwl_bin, period, spatial, ranking){
+run_table = function(sector, category, scn, unit, gwl_bin, period, spatial, ranking){ 
     
     message(glue('---- Running {sector} {category} {scn} impacts ({gwl_bin}, {period}) ----'))
     message(glue('---- Units: {unit}'))
     message(glue('---- Ranking: {ranking}'))
     message(glue('---- Spatial: {spatial}'))
-    message(glue("Reading: {input}/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2.csv"))
+    message(glue("Reading: {input}/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2-low.csv"))
     if (spatial == 'aggregated' & unit == 'levels'){
-        impacts = read.csv(glue("{input}/{sector}/{category}-{scn}-ir_level-{unit}-{gwl_bin}-{period}-SSP2.csv")) %>% 
-            select(region, mean, q25, q50, q75)
+        impacts = read.csv(glue("{input}/{sector}/{category}-{scn}-ir_level-{unit}-{gwl_bin}-{period}-SSP2-low.csv")) %>% 
+            select(region, q25, q50, q75)
     } else {
-        impacts = read.csv(glue("{input}/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2.csv")) %>%
-            select(region, mean, q25, q50, q75)
+        impacts = read.csv(glue("{input}/{sector}/{category}-{scn}-{spatial}-{unit}-{gwl_bin}-{period}-SSP2-low.csv")) %>%
+            select(region, q25, q50, q75)
     }
 
     if (spatial == 'aggregated'){
         if (unit == 'levels'){
             impacts = impacts %>% mutate(region = substr(region, 1, 3)) %>% group_by(region) %>%
-                summarise(mean = sum(mean, na.rm = TRUE),
-                    q25 = sum(q25, na.rm = TRUE),
-                    q50 = sum(q50, na.rm = TRUE),
-                    q75 = sum(q75, na.rm = TRUE))
+                summarise(q25 = sum(q25, na.rm = TRUE),
+                          q50 = sum(q50, na.rm = TRUE),
+                          q75 = sum(q75, na.rm = TRUE))
+                    
           } else {
             impacts = impacts %>% filter(nchar(region) <= 3 & region != "")
           }
@@ -73,28 +73,31 @@ run_table = function(sector, category, scn, unit, gwl_bin, period, spatial, rank
         cat(txt)
   
     } else if (ranking == 'ir'){
-  
+
         # arrange in descending order
         ir_ranked = impacts %>% arrange(desc(q50))
   
         names = read.csv('/project/cil/gcp/regions/hierarchy-flat.csv') %>% select(region.key, name) %>% rename(region=region.key)
   
-        ir_ranked = ir_ranked %>% left_join(names) %>% select(name, region, mean, q25, q50, q75)
+        ir_ranked = ir_ranked %>% left_join(names) %>% select(name, region, q25, q50, q75)
   
         # save out full ranking
         message(glue('Saving: impact_regions_ranked-{sector}-{category}-{scn}-{unit}-{gwl_bin}-{period}.csv \n in {output}/{sector}'))
         write.csv(ir_ranked, glue('{output}/{sector}/impact_regions_ranked-{sector}-{category}-{scn}-{unit}-{gwl_bin}-{period}.csv'), row.names=F)
+        
+        txt = ir_ranked %>% select(name, q50) %>% slice_head(n = 25) %>% mutate(q50 = sprintf("%.1f", q50)) %>% format_tsv()
+        cat(txt)
   
     } else if (ranking == 'country'){
 
         # get country names
         names = read_csv('/project/cil/gcp/regions/hierarchy.csv', skip=31, show_col_types = FALSE) %>% select(`region-key`, name) %>% rename(region=`region-key`)
         names = names %>% filter(nchar(region) <= 3 & region != "") 
-        impacts = impacts %>% left_join(names)
+        impacts = impacts %>% filter(nchar(region) == 3) %>% left_join(names)
         
         # arrange in descending order
-        country_ranked = impacts %>% select(region, name, q50) %>% arrange(desc(q50)) %>% filter(!is.na(q50))
-  
+        country_ranked = impacts %>% select(name, region, q25, q50, q75) %>% arrange(desc(q50)) %>% filter(!is.na(q50))
+
         # save out full ranking
         message(glue('Saving: countries_ranked-{sector}-{category}-{scn}-{unit}-{gwl_bin}-{period}.csv \n in {output}/{sector}'))
         write.csv(country_ranked, glue('{output}/{sector}/countries_ranked-{sector}-{category}-{scn}-{unit}-{gwl_bin}-{period}.csv'), row.names=F)
@@ -105,18 +108,19 @@ run_table = function(sector, category, scn, unit, gwl_bin, period, spatial, rank
 
     } else if (ranking == 'cont'){
 
-        continents = read_csv('/project/cil/gcp/regions/continents2.csv', show_col_types = FALSE) %>% 
-            select(`alpha-3`, region, `sub-region`) %>% 
-            rename(country = `alpha-3`,
+      continents = read_csv('/project/cil/gcp/regions/continents2.csv', show_col_types = FALSE) %>% 
+        select(`alpha-3`, region, `sub-region`) %>% 
+        rename(iso = `alpha-3`,
                continent = region,
                sub_region = `sub-region`) %>%
-            mutate(country = ifelse(country=='SXM', 'SMX', country),
-               continent = ifelse(country=='ATA', 'Antarctica', continent),
-               sub_region = ifelse(country=='ATA', 'Antarctica', sub_region),
-               sub_region = ifelse(country=='MEX', 'Northern America', sub_region)) %>%
-            bind_rows(data.frame(country = "KO-", continent = "Europe"),
-                      data.frame(country = "CA-", continent = "Asia")) %>%
-            mutate(continent = ifelse(continent == "Americas", sub_region, continent))
+        mutate(iso = ifelse(iso=='SXM', 'SMX', iso),
+               continent = ifelse(iso=='ATA', 'Antarctica', continent),
+               sub_region = ifelse(iso=='ATA', 'Antarctica', sub_region)) %>%
+        bind_rows(data.frame(iso = "KO-", continent = "Europe"),
+                  data.frame(iso = "CA-", continent = "Asia")) %>%
+        mutate(continent = ifelse(continent == "Americas", sub_region, continent)) %>%
+        filter(continent != "Antarctica") %>%
+        select(iso, continent)
         
         if (unit == "levels"){
     
@@ -226,4 +230,16 @@ for (cat in c('combined', 'oldest', 'older', 'young')){
     }
 }
 
+for (cat in c('combined')){
+  for (u in c('rates')){
+    run_table(sector="mortality", 
+              category=cat, 
+              scn="fulladapt", 
+              unit=u,
+              gwl_bin="3_c", 
+              period="midc", 
+              spatial="aggregated", 
+              ranking="country") 
+  }
+}
 

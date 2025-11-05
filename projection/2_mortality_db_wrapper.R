@@ -54,22 +54,34 @@ get.clipped.curve.mortality.mmt <- function(csvv, climtas, loggdppc, age, year, 
 standard_delta_beta = function(region, curve_ds, binclim, year, base_year, rebase_year, rnd.digits = 2, drop_zero_bins = T, rel.mmt = T, mmt=NULL, full_db = F, bin=NULL, het.list) {
 
   dims = dimnames(binclim)[[1]]
+  
+  NA_effect_rb = numeric(length(dims))
+  for (y in rebase_year){
+    NA_effect_rb = NA_effect_rb + curve_ds[dims,paste0(base_year[1],'_NA'),region]*binclim[dims,paste(y),]
+  }
+  NA_effect_rb = NA_effect_rb / length(rebase_year)
+  
+  NA_effect_clim = numeric(length(dims))
+  for (y in base_year){
+    NA_effect_clim = NA_effect_clim + curve_ds[dims,paste0(base_year[1],'_NA'),region]*binclim[dims,paste(y),]
+  }
+  NA_effect_clim = NA_effect_clim / (length(base_year))
+  
+  binclim[dims, paste(base_year[1]), ] = rowMeans(binclim[dims, paste(base_year), ])
+
   FA_effect_y = curve_ds[dims,paste0(year),region]*binclim[dims,paste(year),] #  beta FA*clim 2099
-  FA_effect_clim = curve_ds[dims,paste0(year),region]*binclim[dims,paste(rebase_year),] #  beta FA*clim 2005
+  FA_effect_clim = curve_ds[dims,paste0(year),region]*binclim[dims,paste(rebase_year[1]),] #  beta FA*clim 2005
   IA_effect_y = curve_ds[dims,paste0(year,'_IA'),region]*binclim[dims,paste(year),] # beta IA*clim 2099
-  IA_effect_by = curve_ds[dims,paste0(year,'_IA'),region]*binclim[dims,paste(base_year),]  #  beta IA*clim 1993
-  IA_effect_clim = curve_ds[dims,paste0(year,'_IA'),region]*binclim[dims,paste(rebase_year),] # beta IA*clim 2005
-  NA_effect_y = curve_ds[dims,paste0(base_year,'_NA'),region]*binclim[dims,paste(year),] #  beta NA*clim 2099
-  NA_effect_by = curve_ds[dims,paste0(base_year,'_NA'),region]*binclim[dims,paste(rebase_year),] #beta NA*clim 2005
-  
+  IA_effect_by = curve_ds[dims,paste0(year,'_IA'),region]*binclim[dims,paste(base_year[1]),]  #  beta IA*clim 1993
+  IA_effect_clim = curve_ds[dims,paste0(year,'_IA'),region]*binclim[dims,paste(rebase_year[1]),] # beta IA*clim 2005
+  NA_effect_y = curve_ds[dims,paste0(base_year[1],'_NA'),region]*binclim[dims,paste(year),] #  beta NA*clim 2099
+  #NA_effect_rb = curve_ds[dims,paste0(base_year[1],'_NA'),region]*binclim[dims,paste(rebase_year),] #beta NA*clim 2005
+  #NA_effect_clim = curve_ds[dims,paste0(base_year,'_NA'),region]*binclim[dims,paste(base_year),] #beta NA*clim 1993
+
   #rebase
-  #FA_effect_y = FA_effect_y - FA_effect_clim
-  IA_effect_by = IA_effect_by - IA_effect_clim
-  FA_effect_y = FA_effect_y - IA_effect_clim
-  # Alternative formula for diagnostic purposes
-  # term_1 = curve_ds[dims,paste0(year),region]*(binclim[dims,paste(year),] - binclim[dims,paste(base_year),])
-  # term_2 = (curve_ds[dims,paste0(year),region] - curve_ds[dims,paste0(year,'_IA'),region])*(binclim[dims,paste(base_year),] - binclim[dims,paste(rebase_year),])
-  
+  FA_effect_y = FA_effect_y - NA_effect_rb 
+  IA_effect_by = IA_effect_by - NA_effect_clim 
+
   if (is.null(bin)) {
     diff = mean(diff(as.numeric(dimnames(binclim)[[1]])))/2
     bin = paste0('(',as.numeric(dimnames(binclim)[[1]])-diff,',',as.numeric(dimnames(binclim)[[1]])+diff,']')		
@@ -77,26 +89,23 @@ standard_delta_beta = function(region, curve_ds, binclim, year, base_year, rebas
   deltabeta = data.frame( list(
     bin=bin,
     T_y = binclim[dims,paste(year),],
-    T_by = binclim[dims,paste(base_year),],
-    T_rb = binclim[dims,paste(rebase_year),],
-    T_diff = binclim[dims,paste(year),] - binclim[dims,paste(base_year),],
+    T_hist = binclim[dims,paste(base_year[1]),], 
+    T_rb = rowMeans(binclim[dims, paste(rebase_year), ]), 
+    T_diff = binclim[dims,paste(year),] - binclim[dims,paste(base_year[1]),], 
     beta_fa = curve_ds[dims,paste0(year),region],
     beta_ia = curve_ds[dims,paste0(year,'_IA'),region],
-    beta_na = curve_ds[dims,paste0(base_year,'_NA'),region],
-    effect_fa = FA_effect_y,# - IA_effect_by,
+    beta_na = curve_ds[dims,paste0(base_year[1],'_NA'),region], # change
+    effect_fa = FA_effect_y - IA_effect_by,
     effect_ia = IA_effect_y - IA_effect_by,
-    effect_na = NA_effect_y - NA_effect_by
-    #effect_fa_alt = term_1 + term_2 # Use for diagnostics, should be exactly the same result as effect_fa
+    effect_na = NA_effect_y - NA_effect_rb
   ) , stringsAsFactors=F
   )
-  
+
   # rounding
   deltabeta[,colnames(deltabeta)[grepl('T_',colnames(deltabeta))]] = round(deltabeta[,colnames(deltabeta)[grepl('T_',colnames(deltabeta))]], digits = 0 )
   deltabeta[,colnames(deltabeta)[grepl('beta_',colnames(deltabeta))]] = round(deltabeta[,colnames(deltabeta)[grepl('beta_',colnames(deltabeta))]], digits = rnd.digits )
   deltabeta[,colnames(deltabeta)[grepl('effect_',colnames(deltabeta))]] = round(deltabeta[,colnames(deltabeta)[grepl('effect_',colnames(deltabeta))]], digits = rnd.digits )
-  
-  # message(mmt)
-  # message(class(mmt))
+
   under_mmt = round( apply(deltabeta[which(as.numeric(rownames(deltabeta)) < mmt),(ncol(deltabeta)-2):ncol(deltabeta)],2,sum), digits = 2)
   over_mmt = round( apply(deltabeta[which(as.numeric(rownames(deltabeta)) > mmt),(ncol(deltabeta)-2):ncol(deltabeta)],2,sum), digits = 2)
   total = round( apply(deltabeta[,(ncol(deltabeta)-2):ncol(deltabeta)],2,sum), digits = 2)
@@ -128,7 +137,7 @@ standard_delta_beta = function(region, curve_ds, binclim, year, base_year, rebas
   }
   
   return(db_table)
-}
+} 
 
 get_db_table = function(csvv, region, clim, covars, age, args, ...) {
   
@@ -137,11 +146,11 @@ get_db_table = function(csvv, region, clim, covars, age, args, ...) {
   }
   
   message(region)
-  
+  base_year = c(sample(1981:2005, 10, replace = TRUE))
   all_years = sort(c(years, base_year, rebase_year))
-  
-  covar_base_year = ifelse(base_year<2016, 2016, base_year)
-  covar_years = sort(c(years, covar_base_year))
+
+  #covar_base_year = ifelse(base_year[1]<2016, 2016, base_year[1])
+  covar_years = sort(c(years, 2015))
   
   if(!is.null(covars)){
     #message('Subsetting covariates...')
@@ -149,31 +158,32 @@ get_db_table = function(csvv, region, clim, covars, age, args, ...) {
                           covar.names=covar.names, list.names=list.names) 
   }else{ covars=NULL }
 
-  #message("Binning climate...")
+  message("Binning climate...")
   binclim = mapply_bin_clim(regions=region, years=all_years, clim=clim,
                             TT_lower_bound=TT_lower_bound, TT_upper_bound=TT_upper_bound, TT_step=TT_step)
+  
   # Response functions
   #message('drawing response functions...')
-  #message('---full adapt')
+  message('---full adapt')
   curve_ds = mapply_curve(csvv=csvv, climtas=covars$climtas, loggdppc=covars$loggdppc,
-                          age=age, year=years, regions=region, base_year=base_year, func=func, het.list=het.list,
+                          age=age, year=years, regions=region, base_year=base_year[1], func=func, het.list=het.list,
                           TT_lower_bound=TT_lower_bound, TT_upper_bound=TT_upper_bound, TT_step=TT_step,
                           do.clipping=do.clipping, goodmoney.clipping=goodmoney.clipping, do.diffclip=do.diffclip)
   
   #message('---no adapt')
   curve_ds = mapply_curve(csvv=csvv, climtas=covars$climtas, loggdppc=covars$loggdppc,
-                          age=age, year=years, regions=region, base_year=base_year, func=func, het.list=het.list,
+                          age=age, year=years, regions=region, base_year=base_year[1], func=func, het.list=het.list,
                           TT_lower_bound=TT_lower_bound, TT_upper_bound=TT_upper_bound, TT_step=TT_step,
                           curve_ds=curve_ds, adapt='no', do.clipping=do.clipping,
                           goodmoney.clipping=goodmoney.clipping, do.diffclip=do.diffclip)
   
   #message('---income adapt')
   curve_ds = mapply_curve(csvv=csvv, climtas=covars$climtas, loggdppc=covars$loggdppc,
-                          age=age, year=years, regions=region, base_year=base_year, func=func, het.list=het.list,
+                          age=age, year=years, regions=region, base_year=base_year[1], func=func, het.list=het.list,
                           TT_lower_bound=TT_lower_bound, TT_upper_bound=TT_upper_bound, TT_step=TT_step,
                           curve_ds=curve_ds, adapt='income', do.clipping=do.clipping,
                           goodmoney.clipping=goodmoney.clipping, do.diffclip=do.diffclip)
-  
+
   #message("got the curve")
   mmt = get.clipped.curve.mortality.mmt(csvv=csvv, climtas=covars$climtas, loggdppc=covars$loggdppc,
                                         age=age, year=years, region=region, base_year=base_year, het.list=het.list,
@@ -187,8 +197,12 @@ get_db_table = function(csvv, region, clim, covars, age, args, ...) {
   
   if (delta.beta==T) {
     message('delta-beta...')
-    years_sub = sort(c(years, base_year))
-    bounds = mapply_bound_to_hist(regions=region, years=years_sub, binclim=binclim)
+    years_sub = sort(c(years, base_year[1],rebase_year[1]))
+    years_sub_squared = sort(c(years, base_year[1]))
+    binclim2 = mapply_bin_clim(regions=region, years=years_sub, clim=clim,
+                               TT_lower_bound=TT_lower_bound, TT_upper_bound=TT_upper_bound, TT_step=TT_step)
+    
+    bounds = mapply_bound_to_hist(regions=region, years=years_sub_squared, binclim=binclim2)
     yrs = names(bounds[[1]])
     bound2 <- list()
     bound2[[names(bounds)[1]]] <- list(
@@ -198,16 +212,17 @@ get_db_table = function(csvv, region, clim, covars, age, args, ...) {
     )
     bound2[[names(bounds)[1]]] <- unlist(bound2[[names(bounds)[1]]], recursive = FALSE)
     
-    curve_plots = mapply_plot_curve(regions=region, curve_ds=curve_ds, bounds=bound2, years=years, base_year=base_year, ...)
-    hist_plots = mapply_plot_hist(regions=region, binclim=binclim, ...)
+    curve_plots = mapply_plot_curve(regions=region, curve_ds=curve_ds, bounds=bound2, years=years, base_year=base_year[1], ...)
+    hist_plots = mapply_plot_hist(regions=region, binclim=binclim2, ...)
     yp = mapply_yellow_purple(regions=region, curve_plots=curve_plots, hist_plots=hist_plots, ...)
-
+    print(yp)
     if(save.plot){
       yp = yp[[1]]
       save_plot(plot = yp, 
-                filename = glue('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/output/yellow_purple/yp_{region}_{age}_{rcp}_{gcm}_{base_year}_{rebase_year}{slug}.jpg'),
+                filename = glue('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/output/yellow_purple/yp_{region}_{age}_{rcp}_{gcm}_{base_year[1]}_{rebase_year[1]}{slug}.jpg'),
                 base_height = 10,
-                base_width = 10)
+                base_width = 10,
+                device = 'jpg')
     }
   }
   
@@ -217,21 +232,21 @@ get_db_table = function(csvv, region, clim, covars, age, args, ...) {
 
 
 # Loop over a list of regions, and then bind them into one dataframe and save it as a csv on sac 
-get_all_db_tables = function(region_list, age, args) {
+get_all_db_tables = function(region_list, age, args, clim_df) {
   
   for(i in 1:length(args)) {
     assign(x = names(args)[i], value = args[[i]])
   }
   
-  all_years = sort(c(years, base_year, rebase_year))
-  
+  #all_years = sort(unique(c(years, base_year, rebase_year)))
+
   # Was getting an error with global covars. This fixes without changing results (all covars pre-2015 should be the same)
-  covar_base_year = ifelse(base_year<2016, 2016, base_year)  # This will load in 2015 covars
-  covar_years = sort(c(years, covar_base_year))
+  #covar_base_year = ifelse(base_year[1]<2016, 2016, base_year[1])  # This will load in 2015 covars
+  covar_years = sort(c(years, 2015))
   
-  clim_df = mapply_extract_climate_data(years=all_years, tas_value=tas_value, 
-                                        ncname = ncname, rcp=rcp, gcm=gcm)
-  
+  # clim_df = mapply_extract_climate_data(years=all_years, tas_value=tas_value, 
+  #                                       ncname = ncname, rcp=rcp, gcm=gcm)
+
   # message('loading csvv...')
   if (!is.null(csvv.name)){
     csvv = read.csvv(filepath = paste0(csvv.dir,csvv.name), het.list=het.list, age=age)
@@ -249,7 +264,7 @@ get_all_db_tables = function(region_list, age, args) {
     message('warning: covars empty')
     covars=NULL 
   }
-  
+
   # Returns list
   df = lapply(region_list, get_db_table, csvv=csvv, clim=clim_df, covars=covars, age=age, args) %>%
     rbindlist()

@@ -31,9 +31,9 @@ rcp = args[1]
 gcm = args[2]
 year = as.numeric(args[3])
 
-#rcp = 'rcp45'
-#gcm = 'ACCESS1-0'
-#year=2050
+# rcp = 'rcp45'
+# gcm = 'ACCESS1-0'
+# year = 2050
 
 ssp = "SSP2" # Hard coded. for now not changing. easy to change by including in CLI args
 iam = "low"
@@ -45,12 +45,19 @@ region_list = list(unique((fread(cov_dir))$region))
 
 # Testing with subsets or specific regions
 # region_list = region_list[[1]][1:3] # any range in [1,24378]
-# region_list = list('BRA.19.3634.R7443a79b44de9a70')
+#region_list = list('BRA.22.4329.Raaa3e9be8ca4501a', 'AUS.6.761', 'OMN.4.25', 'BWA.7', 'MEX.23.1231') # <- REGIONS NEAR 0 IMPACTS
+#region_list = list('PAK.2.4.23')#, 'BFA.29', 'NER.1.3.4', 'DZA.1.16', 'SDN.6.15.72.223') # <- DELTABETA IMPACTS MUCH HIGHER
+#region_list = list('USA.26.1540', 'USA.14.649') # <- PROJ HAS NEGATIVE IMPACTS, SIGN FLIP IN DB
+#region_list = list('CAN.8.117.2359')#, 'RUS.65.1741.1858', 'CAN.8.117.2350', 'RUS.5.108.108') # <- Cold deaths underestimated
+#region_list = list('PAK.2.4.23')
+
+slug=''
 
 #-----set args here-----
 args = list(years=year,
             base_year=1993,
             rebase_year=2005,
+            bound_to_hist=F,
             csvv.dir=csvv_dir,
             csvv.name=csvv_name,
             het.list=het_list,
@@ -62,14 +69,19 @@ args = list(years=year,
             get.covars=T,
             tas_value="tas",
             ncname="1.6",
-            TT_upper_bound=100,
-            TT_lower_bound=-100,
+            TT_upper_bound=70,
+            TT_lower_bound=-70,
             TT_step=1,
             do.clipping=T,
             goodmoney.clipping=T, 
             do.diffclip=T,
-            full_db=F, # this should be F
-            do_global=F)
+            full_db=F, # this should be F for projection approximations, T for plotting curves
+            do_global=F,
+            delta.beta=F, # TRUE IF YOU WANT PLOTS
+            return.db=T,
+            rel.20 = T,
+            save.plot=F
+            )
 
 #==============================================================================#
 # 2. Run Function ----
@@ -87,15 +99,19 @@ for (age in age_list){
   
   df = lapply(region_list, get_all_db_tables, age, args)
   df = do.call(rbind, df) %>% as.data.frame() %>% select(region, bin, effect_fa)
+  #df = df %>% filter(bin == "hot" | bin == "cold" | bin == "Total")
   
   file_name = glue("mortality-delta_beta-fulladapt-{year}-{agegroup}.csv")
   output = glue("{out}/{file_name}")
   
   message('\n[ saving ]\n')
   message(glue("Saving: {file_name}\nOutput directory: {out}\n"))
+  cat(df %>% format_tsv())
   write.csv(df, output, row.names=FALSE)
   message("\n[ saved ]\n")
   
 }
 
 message(glue("[ all age groups completed ]"))
+
+

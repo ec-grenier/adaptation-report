@@ -22,11 +22,11 @@ echo "Monte Carlos pulled from ${results_root}" >> "${LOG_FILE}"
 echo "Output directory is ${output}" >> "${LOG_FILE}"
 
 # Iterable arguments
-binlist=( 3_c_midc_a 3_c_midc_b ) # 2_c_midc 3_c_midc_a 3_c_midc_b 4_c_midc
+binlist=( 3_c_midc_a 3_c_midc_b ) # 2_c_midc 3_c_midc_a 3_c_midc_b 4_c_midc 3_c_endc_a 3_c_endc_b 
 ssplist=( SSP2 ) # only SSP2
 iamlist=( low ) # only IIASA for this
-agelist=( young older oldest )  # young, older, oldest, combined
-scnlist=( fulladapt ) # noadapt incadapt fulladapt costs fulladaptcosts
+agelist=( combined )  # young, older, oldest, combined
+scnlist=( incadapt ) # noadapt incadapt fulladapt costs fulladaptcosts
 spatiallist=( aggregated ) #aggregated, ir_level 
 unitslist=( rates ) #rates, levels
 
@@ -68,6 +68,18 @@ for bin in ${binlist[@]}; do
                         rcplist=(rcp85)
             			yearlist=[[2040,2059]]
             			format="edfcsv"
+                        ;;
+                3_c_endc_a)
+                        only_models=[ACCESS1-0,BNU-ESM,CanESM2,CSIRO-Mk3-6-0,IPSL-CM5A-LR,IPSL-CM5A-MR,MIROC-ESM,MIROC-ESM-CHEM]
+                        rcplist=(rcp45)
+            			yearlist=[[2080,2099]]
+                		format="valuescsv" # edfcsv, valuescsv
+                        ;;
+                3_c_endc_b)
+                        only_models=[GFDL-ESM2M,inmcm4]
+                        rcplist=(rcp85)
+            			yearlist=[[2080,2099]]
+            			format="valuescsv" # edfcsv, valuescsv
                         ;;
         esac
 

@@ -8,7 +8,7 @@
 
 #==============================================================================#
 # 0. Source, set packages and paths -----------
-packages = c("glue", "tidyverse", "data.table", "reticulate", "scales")
+packages = c("glue", "dplyr", "data.table", "reticulate", "scales", "readr")
 invisible(lapply(packages, function(pkg) {
   suppressPackageStartupMessages(library(pkg, character.only = TRUE))
 }))
@@ -62,7 +62,7 @@ print(round(mean(models_3c$temp_rel_pre_in), 2))
 
 pop = get_dscim_econ_vars("pop", "all", "low", "SSP2", 2050) 
 
-impacts = read.csv('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/mortality/combined-fulladapt-ir_level-levels-3_c-midc-SSP2-low-hot.csv') %>% select(region, q50)
+impacts = read.csv('/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/mortality/combined-fulladapt-ir_level-levels-3_c-midc-SSP2-low-hot-fixed.csv') %>% select(region, q50)
 impacts = impacts %>% filter(!is.na(q50)) %>% arrange(q50)
 impacts = impacts %>% mutate(cum_damages = cumsum(q50),
                              cum_pct = cum_damages / sum(q50, na.rm = TRUE) * 100)
@@ -104,3 +104,61 @@ sum(pop$pop[pop$worldbank == "low"], na.rm = TRUE)
 sum(pop$pop[pop$worldbank == "lower-middle"], na.rm = TRUE)
 sum(pop$pop[pop$worldbank == "low"], na.rm = TRUE) + sum(pop$pop[pop$worldbank == "lower-middle"], na.rm = TRUE)
 
+#==============================================================================#
+# 3. Number of IRs/population that live in low or lower-middle income countries? -----------
+
+wb_regions = read_csv("/project/cil/gcp/regional_scc/data/misc/worldbank-regions.csv")
+
+pop = get_dscim_econ_vars("pop", "all", "low", "SSP2", 2050) %>% mutate(ISO = substr(region, 1, 3))
+pop = pop %>% left_join(wb_regions)
+
+# count of IRs by worldbank regions
+pop %>% count(worldbank)
+sum(pop$pop[pop$worldbank == "low"], na.rm = TRUE)
+sum(pop$pop[pop$worldbank == "lower-middle"], na.rm = TRUE)
+sum(pop$pop[pop$worldbank == "upper-middle"], na.rm = TRUE)
+sum(pop$pop[pop$worldbank == "high"], na.rm = TRUE)
+sum(pop$pop[pop$worldbank == "low"], na.rm = TRUE) + sum(pop$pop[pop$worldbank == "lower-middle"], na.rm = TRUE)
+
+#==============================================================================#
+# 4. Pop-weighted wb income group impacts  -----------
+
+wb_regions = read_csv("/project/cil/gcp/regional_scc/data/misc/worldbank-regions.csv")
+
+pop = get_dscim_econ_vars("pop", "all", "low", "SSP2", 2050) %>% mutate(ISO = substr(region, 1, 3))
+pop = pop %>% left_join(wb_regions) 
+pop = pop %>% select(region, pop, worldbank) %>% filter(!is.na(worldbank))
+
+dmg = read_csv("/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/mortality/combined-fulladapt-ir_level-rates-3_c-midc-SSP2-low.csv")
+
+dmg = pop %>% left_join(dmg)
+dmg = dmg %>% select(region, q50, pop, worldbank)
+
+test = dmg %>% 
+  group_by(worldbank) %>% 
+  summarize(weighted_mean = weighted.mean(q50, pop))
+
+#==============================================================================#
+# 4. Pop-weighted wb income group impacts  -----------
+
+wb_regions = read_csv("/project/cil/gcp/regional_scc/data/misc/worldbank-regions.csv")
+
+pop = get_dscim_econ_vars("pop", "all", "low", "SSP2", 2050) %>% mutate(ISO = substr(region, 1, 3))
+pop = pop %>% left_join(wb_regions) 
+pop = pop %>% select(region, pop, worldbank) %>% filter(!is.na(worldbank))
+
+rates = read_csv("/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/mortality/combined-fulladapt-ir_level-rates-3_c-midc-SSP2-low.csv")
+
+rates = pop %>% left_join(rates) %>% select(region, q50, pop, worldbank)
+
+rates = rates %>% 
+  group_by(worldbank) %>% 
+  summarize(weighted_mean = weighted.mean(q50, pop))
+
+levels = read_csv("/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data/analysis_ready/mortality/combined-fulladapt-ir_level-levels-3_c-midc-SSP2-low.csv")
+
+levels = pop %>% left_join(levels) %>% select(region, q50, pop, worldbank)
+
+levels = levels %>% 
+  group_by(worldbank) %>% 
+  summarize(total = sum(q50))

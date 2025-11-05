@@ -16,7 +16,7 @@ rm(packages)
 
 #==============================================================================#
 # 1. Define inputs -----------
-agegroup = "young"
+agegroup = "oldest" # Run one of "oldest" "older" "young"
 input = '/project/cil/home_dirs/egrenier/cil-comms/adaptation_report/data'
 years = c(2040:2059)
 
@@ -35,8 +35,10 @@ specs = list(
 
 pop = fread(glue('{input}/misc/pop-SSP2-low.csv')) %>% select(region, year, paste0(agegroup,"_pop"))
 
+slug=''
+
 #==============================================================================#
-# 1. Functions -----------
+# 2. Functions -----------
 
 # function to help load in data and stack impacts 
 stack_impacts = function(spec, year, type, levels=F, pop=NULL){
@@ -47,7 +49,7 @@ stack_impacts = function(spec, year, type, levels=F, pop=NULL){
   ssp = spec$ssp
   
   # Combine impacts
-  df = fread(glue("{input}/deltabeta/{rcp}/{gcm}/{iam}/{ssp}/mortality-delta_beta-fulladapt-{year}-{agegroup}.csv"))
+  df = fread(glue("{input}/deltabeta/{rcp}/{gcm}/{iam}/{ssp}/mortality-delta_beta-fulladapt-{year}-{agegroup}{slug}.csv"))
   
   if (type == "total"){
     df = df %>% filter(bin == "Total") %>% select(region, effect_fa) %>% rename(value = effect_fa)
@@ -83,7 +85,7 @@ get_quantiles = function(df) {
 }
 
 #==============================================================================#
-# 2. Aggregate impacts (RATES) -----------
+# 3. Aggregate impacts (RATES) -----------
 
 total = data.frame()
 for (s in specs) {
@@ -93,7 +95,7 @@ for (s in specs) {
 }
 total = get_quantiles(total) %>% mutate(year ="2040-2059") %>% select(region, year, everything())
 
-output_total = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-rates-3_c-midc-SSP2-low-deltabeta_total.csv')
+output_total = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-rates-3_c-midc-SSP2-low-deltabeta_total{slug}.csv')
 print(output_total)
 write.csv(total, output_total, row.names=F)
 
@@ -105,7 +107,7 @@ for (s in specs) {
 }
 hot = get_quantiles(hot) %>% mutate(year ="2040-2059") %>% select(region, year, everything())
 
-output_hot = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-rates-3_c-midc-SSP2-low-hot.csv')
+output_hot = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-rates-3_c-midc-SSP2-low-hot{slug}.csv')
 print(output_hot)
 write.csv(hot, output_hot, row.names=F)
 
@@ -117,12 +119,12 @@ for (s in specs) {
 }
 cold = get_quantiles(cold) %>% mutate(year ="2040-2059") %>% select(region, year, everything())
 
-output_cold = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-rates-3_c-midc-SSP2-low-cold.csv')
+output_cold = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-rates-3_c-midc-SSP2-low-cold{slug}.csv')
 print(output_cold)
 write.csv(cold, output_cold, row.names=F)
 
 #==============================================================================#
-# 2. Aggregate impacts (RATES) -----------
+# 4. Aggregate impacts (LEVELS) -----------
 
 total = data.frame()
 for (s in specs) {
@@ -132,7 +134,7 @@ for (s in specs) {
 }
 total = get_quantiles(total) %>% mutate(year ="2040-2059") %>% select(region, year, everything())
 
-output_total = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-levels-3_c-midc-SSP2-low-deltabeta_total.csv')
+output_total = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-levels-3_c-midc-SSP2-low-deltabeta_total{slug}.csv')
 print(output_total)
 write.csv(total, output_total, row.names=F)
 
@@ -144,7 +146,7 @@ for (s in specs) {
 }
 hot = get_quantiles(hot) %>% mutate(year ="2040-2059") %>% select(region, year, everything())
 
-output_hot = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-levels-3_c-midc-SSP2-low-hot.csv')
+output_hot = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-levels-3_c-midc-SSP2-low-hot{slug}.csv')
 print(output_hot)
 write.csv(hot, output_hot, row.names=F)
 
@@ -156,6 +158,6 @@ for (s in specs) {
 }
 cold = get_quantiles(cold) %>% mutate(year ="2040-2059") %>% select(region, year, everything())
 
-output_cold = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-levels-3_c-midc-SSP2-low-cold.csv')
+output_cold = glue('{input}/analysis_ready/mortality/{agegroup}-fulladapt-ir_level-levels-3_c-midc-SSP2-low-cold{slug}.csv')
 print(output_cold)
 write.csv(cold, output_cold, row.names=F)

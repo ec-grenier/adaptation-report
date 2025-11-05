@@ -33,10 +33,10 @@ specs = list(
 )
 
 pop = fread(glue('{input}/misc/pop-SSP2-low.csv')) %>% select(region, year, pop)
-slug=''
+slug='-avg'
 
 #==============================================================================#
-# 1. Functions -----------
+# 2. Functions -----------
 
 # function to help load in data and stack impacts 
 stack_impacts = function(spec, year, type, levels=F, pop=NULL){
@@ -83,7 +83,7 @@ get_quantiles = function(df) {
 }
 
 #==============================================================================#
-# 2. Aggregate impacts (RATES) -----------
+# 3. Aggregate impacts (RATES) -----------
 
 total = data.frame()
 for (s in specs) {
@@ -122,7 +122,7 @@ print(output_cold)
 write.csv(cold, output_cold, row.names=F)
 
 #==============================================================================#
-# 2. Aggregate impacts (RATES) -----------
+# 4. Aggregate impacts (LEVELS) -----------
 
 total = data.frame()
 for (s in specs) {

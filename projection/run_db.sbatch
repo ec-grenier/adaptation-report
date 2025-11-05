@@ -5,7 +5,7 @@
 #SBATCH --partition=caslake
 #SBATCH --time=36:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=2G
+#SBATCH --mem=8G
 #SBATCH --array=0-199
 
 # Time the whole process
