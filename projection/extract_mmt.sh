@@ -1,5 +1,9 @@
 #!/bin/bash
-# Usage: ./parse_outfiles_parallel_fast.sh /path/to/input /path/to/output/mortality_summary.csv
+# Usage: ./extract_mmt.sh /path/to/input /path/to/output/mortality_summary.csv
+#
+# Point out the output log from the delta beta projections. This script will collect each
+# region's MMT and output a csv
+#
 
 set -euo pipefail
 
